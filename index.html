@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+ <link rel="manifest" href="manifest.json">
+ <meta name="theme-color" content="#4ca1af">
+</head>
+<meta charset="UTF-8">
+<title>4:6 Coffee Timer</title>
+<style>
+  body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #2c3e50, #4ca1af);
+    font-family: "Helvetica Neue", sans-serif;
+    color: white;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    padding: 30px;
+    border-radius: 20px;
+    text-align: center;
+    width: 300px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+
+  h1 {
+    margin-bottom: 10px;
+    font-size: 22px;
+  }
+
+  #time {
+    font-size: 42px;
+    margin: 15px 0;
+  }
+
+  #step {
+    font-size: 18px;
+    opacity: 0.9;
+  }
+
+  #amount {
+    font-size: 20px;
+    margin-top: 10px;
+    color: #ffd166;
+  }
+
+  #total {
+    font-size: 20px;
+    color: #06d6a0;
+  }
+
+  button {
+    margin-top: 20px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 30px;
+    background: #ffd166;
+    color: #333;
+    font-size: 18px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  button:hover {
+    background: #ffb703;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>4:6 Coffee Timer</h1>
+  <div id="time">0 秒</div>
+  <div id="step">待機中</div>
+  <div id="amount">今回: 0 ml</div>
+  <div id="total">合計: 0 ml</div>
+  <button onclick="startTimer()">スタート</button>
+</div>
+
+<script>
+// 音を鳴らす（Web Audio API）
+function beep() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.type = "sine";
+  osc.frequency.value = 800;
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(
+    0.00001, ctx.currentTime + 0.3
+  );
+}
+
+// 粕谷レシピ（300ml）
+let steps = [
+  {time: 0,   text: "1投目（蒸らし）", amount: 60},
+  {time: 45,  text: "2投目", amount: 60},
+  {time: 90,  text: "3投目", amount: 60},
+  {time: 135, text: "4投目", amount: 60},
+  {time: 180, text: "5投目", amount: 60},
+  {time: 225, text: "終了", amount: 0}
+];
+
+let timer;
+let startTime;
+let index = -1;
+let total = 0;
+
+function startTimer() {
+  startTime = Date.now();
+  clearInterval(timer);
+  index = -1;
+  total = 0;
+
+  timer = setInterval(() => {
+    let t = Math.floor((Date.now() - startTime)/1000);
+    document.getElementById("time").innerText = t + " 秒";
+
+    if (index < steps.length - 1 && t >= steps[index + 1].time) {
+      index++;
+      let s = steps[index];
+
+      total += s.amount;
+
+      document.getElementById("step").innerText = s.text;
+      document.getElementById("amount").innerText = "今回: " + s.amount + " ml";
+      document.getElementById("total").innerText = "合計: " + total + " ml";
+
+      beep(); // ←ここで音
+    }
+
+    if (t >= steps[steps.length - 1].time) {
+      clearInterval(timer);
+    }
+
+  }, 200);
+}
+
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+
+</script>
+
+</body>
+</html>
